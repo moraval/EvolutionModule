@@ -45,8 +45,6 @@ namespace EvolutionModule.Tasks
 
         private MyCudaKernel discreteCosineTransform;
 
-        string myreward;
-
         public float[,] Sk;
         public float[,] Zk;
 
