@@ -7,7 +7,7 @@
 extern "C"
 {
 	//The kernel for discrite cosine transformation
-	__global__ void DiscriteCosineTransform(
+	__global__ void DiscreteCosineTransform(
 		float* coefficients,
 		float* output,
 		float* weights,
@@ -47,15 +47,15 @@ extern "C"
 		}
 		__syncthreads();
 
-		if (c == 0){
-			float local = 0;
+		if (c == 0 && threadId < C*W){
+			float sum = 0;
 			for (int i = offset; i < C + offset; i++)
 			{
-				local += output[i];
+				sum += output[i];
 				//weights[w] += output[i];
 			}
-			//local *= sqrt(2.f) / sqrt((float)C);
-			weights[w] = local * sqrt(2.f) / sqrt((float)C);
+			//weights[w] *= sqrt(2.f) / sqrt((float)C);
+			weights[w] = sum * sqrt(2.f) / sqrt((float)C);
 		}
 	}
 }

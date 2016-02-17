@@ -43,9 +43,9 @@ namespace EvolutionModule.Tasks
         [MyBrowsable, Category("Evolution"), YAXSerializableField(DefaultValue = false)]
         public bool direct { get; set; }
 
-        private MyCudaKernel discriteCosineTransform;
+        private MyCudaKernel discreteCosineTransform;
 
-        string myreward = "";
+        string myreward;
 
         public float[,] Sk;
         public float[,] Zk;
@@ -56,22 +56,12 @@ namespace EvolutionModule.Tasks
         My2DAgentWorld agentWorld;
         MyGridWorld gridworld;
 
-        String file;
 
         public override void Init(int nGPU)
         {
-            int ending = 1;
-            file = "C://Users//Alena Moravova//Desktop//inner_fitness_" + ending + ".csv";
-            while (File.Exists(file))
-            {
-                ending++;
-                file = "C://Users//Alena Moravova//Desktop//inner_fitness" + ending + ".csv";
-            }
-
-            discriteCosineTransform = MyKernelFactory.Instance.Kernel(nGPU, @"\DCTKernel", "DiscriteCosineTransform");
-            discriteCosineTransform.SetupExecution(Owner.MaxNumberOfCoefficients * Owner.MaxNumberOfWeights);
-            discriteCosineTransform.DynamicSharedMemory = sizeof(float) * (uint)Owner.MaxNumberOfCoefficients;
-
+            discreteCosineTransform = MyKernelFactory.Instance.Kernel(nGPU, @"\DCTKernel", "DiscreteCosineTransform");
+            discreteCosineTransform.SetupExecution(Owner.MaxNumberOfCoefficients * Owner.MaxNumberOfWeights);
+            discreteCosineTransform.DynamicSharedMemory = sizeof(float) * (uint)Owner.MaxNumberOfCoefficients;
 
             if (agent)
                 agentWorld = (My2DAgentWorld)Owner.Owner.World;
@@ -92,10 +82,6 @@ namespace EvolutionModule.Tasks
             if (SimulationStep == 0)
             {
                 DrawNewSample();
-
-                ////adds sample number to the output
-                myreward = Owner.sampleIndex + ",";
-
                 PrepareCoefficients();
                 PrepareNetwork();
             }
@@ -112,14 +98,7 @@ namespace EvolutionModule.Tasks
                     //end of inner evolution of one sample
                     if (Owner.sampleSteps == (Owner.InnerEvolutionSteps - 1))
                     {
-                        myreward = myreward + Owner.Fitness.Host[Owner.InnerPopulationSize - 1] + ",";
-
                         DrawNewSample();
-
-                        //add sample number to the output
-                        myreward = myreward + "\n";
-                        File.AppendAllText(file, myreward);
-                        myreward = Owner.sampleIndex + ",";
 
                         Owner.sampleSteps = 0;
 
@@ -130,12 +109,12 @@ namespace EvolutionModule.Tasks
                         }
                         else
                         {
+                            
                             Owner.outerSteps++;
                         }
                     }
                     else
                     {
-                        myreward = myreward + Owner.Fitness.Host[Owner.InnerPopulationSize - 1] + ",";
                         Owner.sampleSteps++;
                     }
 
@@ -193,9 +172,9 @@ namespace EvolutionModule.Tasks
                     break;
                 }
             }
-            //Console.WriteLine();
-            //Console.WriteLine("coefficients " + Owner.NumberOfCoefficients.Host[sampleIndex]);
-            //Console.WriteLine("weights " + Owner.NumberOfWeights.Host[sampleIndex]);
+            LearningRateSigma = ((float)Math.Log((double)Owner.NumberOfCoefficients.Host[Owner.sampleIndex]) + 3f)/ 
+                ((float)Math.Sqrt(Owner.NumberOfCoefficients.Host[Owner.sampleIndex]) * 10f);
+           
         }
 
 
@@ -222,11 +201,6 @@ namespace EvolutionModule.Tasks
 
             int offset = Owner.sampleIndex * Owner.MaxNumberOfCoefficients;
 
-            //for (int i = 0; i < Owner.InnerPopulationSize; i++)
-            //{
-            //    Console.WriteLine(Owner.Fitness.Host[Owner.InnerPopulationSize - 1 - i] + " utility: " + Owner.Utility.Host[i]);
-            //}
-
             for (int j = 0; j < coefficientLength; j++)
             {
                 MeanDelta = 0;
@@ -252,7 +226,6 @@ namespace EvolutionModule.Tasks
             if (Owner.PopulationFitnesses.Host[Owner.sampleIndex] < Owner.Fitness.Host[Owner.InnerPopulationSize - 1])
                 Owner.PopulationFitnesses.Host[Owner.sampleIndex] = Owner.Fitness.Host[Owner.InnerPopulationSize - 1];
 
-            //Console.WriteLine("reward " + Owner.PopulationFitnesses.Host[sampleIndex]);
             Owner.PopulationFitnesses.SafeCopyToDevice();
 
             Owner.Sigmas.SafeCopyToDevice();
@@ -319,7 +292,7 @@ namespace EvolutionModule.Tasks
 
             if (!direct)
             {
-                discriteCosineTransform.Run(
+                discreteCosineTransform.Run(
                     Owner.InnerEvolCoefficients,
                     Owner.DCTMatrix,
                     Owner.InnerEvolWeights,

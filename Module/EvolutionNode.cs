@@ -11,6 +11,7 @@ using ManagedCuda;
 using YAXLib;
 using EvolutionModule.Tasks;
 using GoodAI.Modules.NeuralNetwork.Layers;
+using System.Collections.Generic;
 
 namespace EvolutionModule
 {
@@ -200,7 +201,7 @@ namespace EvolutionModule
         {
             if (Input != null)
             {
-                threshold = 0.3f;
+                threshold = 0.1f;
 
                 // all possible complexities
                 AllCombinations = Math.Max((int)(MaxNumberOfCoefficients - MinNumberOfCoefficients)/CoefficientSteps, 1) 
@@ -241,7 +242,6 @@ namespace EvolutionModule
                 OutputActivations.Count = OUTPUT_UNITS;
 
                 InnerEvolWeights.Count = MaxNumberOfWeights;
-                //InnerEvolWeights.ColumnHint = MaxNumberOfCoefficients;
                 InnerEvolCoefficients.Count = MaxNumberOfCoefficients;
                 DCTMatrix.Count = MaxNumberOfCoefficients * MaxNumberOfWeights;
 

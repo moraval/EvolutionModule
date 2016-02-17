@@ -18,40 +18,29 @@ namespace EvolutionModule.Tasks
     [Description("InitTask"), MyTaskInfo(OneShot = true)]
     public class InitTask : MyTask<EvolutionNode>
     {
-        //private MyCudaKernel utilityKernel;
 
         public override void Init(int nGPU)
         {
-            //utilityKernel = MyKernelFactory.Instance.Kernel(nGPU, @"\UtilitiesKernel", "UtilitiesKernel");
-            //utilityKernel.SetupExecution(Owner.InnerPopulationSize);
         }
 
         public override void Execute()
         {
-
             Owner.outerSteps = 0;
             Owner.innerSteps = 0;
             Owner.sampleSteps = 0;
-
-            //utilityKernel.Run(Owner.Utility, (float)Owner.InnerPopulationSize);
 
             float total = 0;
             for (int i = 0; i < Owner.InnerPopulationSize; i++)
             {
                 Owner.Utility.Host[i] = (float)Math.Max(0, Math.Log((float)Owner.InnerPopulationSize / 2 + 1) - Math.Log(i+1));
                 total += Owner.Utility.Host[i];
-                //Console.Write(Owner.Utility.Host[i] + " ");
             }
 
-            //Console.WriteLine();
             for (int i = 0; i < Owner.InnerPopulationSize; i++)
             {
                 Owner.Utility.Host[i] = Owner.Utility.Host[i] / total - 1f / Owner.InnerPopulationSize;
-                //Console.Write(Owner.Utility.Host[i] + " ");
             }
-            //Console.WriteLine();
             Owner.Utility.SafeCopyToDevice();
-
 
             float normalization = 0;
             for (int i = 0; i < Owner.AllCombinations; i++)
@@ -59,7 +48,6 @@ namespace EvolutionModule.Tasks
                 Owner.PopulationDistribution.Host[i] = (float)1 / (i + 1);
                 normalization += Owner.PopulationDistribution.Host[i];
             }
-
 
             for (int i = 0; i < Owner.AllCombinations; i++)
             {
@@ -80,10 +68,8 @@ namespace EvolutionModule.Tasks
 
             int steps = Math.Max((Owner.MaxNumberOfCoefficients - Owner.MinNumberOfCoefficients)
                 / Owner.CoefficientSteps, 1);
-            Debug.WriteLine("steps " + steps);
             int oneRun = Math.Max((int)(Owner.MaxNumberOfWeights - Owner.MinNumberOfWeights)
                     / Owner.WeightSteps, 1);
-            Debug.WriteLine("oneRun " + oneRun);
             int nrOfCoefficients = Owner.MinNumberOfCoefficients;
             int nrOfWeights = Owner.MinNumberOfWeights;
 
@@ -95,8 +81,6 @@ namespace EvolutionModule.Tasks
                     Owner.NumberOfWeights.Host[i * oneRun + j] = nrOfWeights;
                     Owner.NumberOfCoefficients.Host[i * oneRun + j] = nrOfCoefficients;
                     nrOfWeights += Owner.WeightSteps;
-                    //Console.WriteLine(Owner.Means.Host[(i * oneRun + j) * Owner.MaxNumberOfCoefficients] + " "
-                    //    + Owner.Sigmas.Host[(i * oneRun + j) * Owner.MaxNumberOfCoefficients]);
                 }
                 nrOfWeights = Owner.MinNumberOfWeights;
                 nrOfCoefficients += Owner.CoefficientSteps;
